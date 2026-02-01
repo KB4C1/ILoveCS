@@ -41,12 +41,26 @@ class MonitorUI(QWidget):
         ])
         self.mode_box.currentTextChanged.connect(self.on_mode_change)
 
+        # Define all checkboxes BEFORE layouts
         self.preview_checkbox = QCheckBox("Show inference preview")
         self.preview_checkbox.setChecked(True)
         self.preview_checkbox.stateChanged.connect(
             lambda x: self.cfg.__setitem__("show_preview", bool(x))
         )
 
+        self.trigger_checkbox = QCheckBox("Enable TriggerBot")
+        self.trigger_checkbox.setChecked(self.cfg.get("trigger_enabled", True))
+        self.trigger_checkbox.stateChanged.connect(
+            lambda state: self.cfg.__setitem__("trigger_enabled", bool(state))
+        )
+
+        self.smooth_checkbox = QCheckBox("AimAssist (beta function)")
+        self.smooth_checkbox.setChecked(self.cfg.get("smooth_aiming", True))
+        self.smooth_checkbox.stateChanged.connect(
+            lambda state: self.cfg.__setitem__("smooth_aiming", bool(state))
+        )
+
+        # Layouts
         left = QVBoxLayout()
         left.addWidget(self.image_label)
 
@@ -55,7 +69,9 @@ class MonitorUI(QWidget):
         right.addWidget(QLabel("Inference mode"))
         right.addWidget(self.mode_box)
         right.addWidget(self.preview_checkbox)
-        right.addStretch()
+        right.addWidget(self.trigger_checkbox)
+        right.addWidget(self.smooth_checkbox)  # <-- Added here
+        right.addStretch()  # <-- Correct place for stretch
 
         layout = QHBoxLayout()
         layout.addLayout(left, 3)
@@ -72,6 +88,7 @@ class MonitorUI(QWidget):
         self.avg_conf = 0
         self.dets = 0
 
+    # The rest of your methods remain unchanged:
     def update_frame(self, frame_bgr):
         if not self.cfg["show_preview"]:
             self.image_label.clear()
@@ -102,7 +119,6 @@ class MonitorUI(QWidget):
         self.avg_conf = avg_conf
         self.dets = dets
 
-    # ==========================
     def update_stats(self):
         cpu = self.process.cpu_percent() / psutil.cpu_count()
         ram = self.process.memory_info().rss / 1024 / 1024
