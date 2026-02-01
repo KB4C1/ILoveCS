@@ -22,9 +22,9 @@ runtime_config = {
     "conf_threshold": 0.4,
     "trigger_enabled": True,
     "smooth_aiming": True,
-    "smooth_steps": 12,
-    "smooth_delay": 0.008,
-    "smooth_noise": 3.0
+    "smooth_steps": 24,
+    "smooth_noise": 0.1,
+    "smooth_delay": 0.001
 }
 
 # =======================
