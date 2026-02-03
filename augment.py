@@ -2,8 +2,8 @@ import os
 import cv2
 import albumentations as A
 
-IN_DIR = "dataset/images/train/raw"
-OUT_DIR = "dataset/images/train/raw"
+IN_DIR = "dataset/images/raw"
+OUT_DIR = "dataset/images/raw/aug"
 
 os.makedirs(OUT_DIR, exist_ok=True)
 
@@ -15,7 +15,7 @@ transform = A.Compose([
     A.RandomGamma(p=0.2),
 ])
 
-AUG_PER_IMAGE = 1  # ×2 датасет (оригінал + 1 аугмент)
+AUG_PER_IMAGE = 2  # ×4 датасет (оригінал + 2 аугмент)
 
 for img_name in os.listdir(IN_DIR):
     if not img_name.lower().endswith((".png", ".jpg", ".jpeg")):

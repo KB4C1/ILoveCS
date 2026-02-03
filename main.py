@@ -11,10 +11,9 @@ from ui_monitor import MonitorUI
 # =======================
 # CONFIG
 # =======================
-model_path = 'versions/v1.pt'
+model_path = 'versions/v2.pt'  # or v1.pt
 window_title = 'Counter-Strike 2'
 WIDTH, HEIGHT = 1280, 720
-
 runtime_config = {
     "inference_size": (320, 192),
     "show_preview": True,
@@ -22,8 +21,8 @@ runtime_config = {
     "conf_threshold": 0.4,
     "trigger_enabled": True,
     "smooth_aiming": True,
-    "smooth_steps": 24,
-    "smooth_noise": 0.1,
+    "smooth_steps": 24,      # <--- кількість кроків (налаштовується тут)
+    "smooth_noise": 0.0,     # <--- шум вимкнено (0.0 = чисто лінійно)
     "smooth_delay": 0.001
 }
 
@@ -31,7 +30,6 @@ runtime_config = {
 # INIT
 # =======================
 torch.backends.cudnn.benchmark = True
-
 model = YOLO(model_path)
 if torch.cuda.is_available():
     model = model.cuda().half()
@@ -92,7 +90,7 @@ class TriggerBot:
 bot = TriggerBot(target_side='ct')
 
 # =======================
-# AIM ASSIST
+# AIM ASSIST (теперь чисто лінійний)
 # =======================
 class AimAssist:
     def __init__(self, target_side='ct', target_part='head', screen_width=WIDTH, screen_height=HEIGHT):
@@ -102,12 +100,10 @@ class AimAssist:
         self.screen_height = screen_height
         self.screen_center = np.array([screen_width // 2, screen_height // 2])
         self.active = False
-
         if target_side == 'ct':
-            self.target_classes = [0] if target_part=='body' else [1]
+            self.target_classes = [0] if target_part == 'body' else [1]
         else:
-            self.target_classes = [2] if target_part=='body' else [3]
-
+            self.target_classes = [2] if target_part == 'body' else [3]
         self.listener = KeyListener(on_press=self.on_press, on_release=self.on_release)
         self.listener.start()
 
@@ -142,26 +138,19 @@ class AimAssist:
     def aim_at_target(self, target_pos):
         if target_pos is None:
             return
-
-
         center_x, center_y = self.screen_center
         target_x, target_y = target_pos
-
         dx_total = target_x - center_x
         dy_total = target_y - center_y
-
-        steps = runtime_config.get("smooth_steps", 16)
+        steps = runtime_config.get("smooth_steps", 24)  # налаштовується в config
+        if steps <= 0:
+            steps = 1
         step_dx = dx_total / steps
         step_dy = dy_total / steps
-
         for _ in range(steps):
-
-            noise_x = random.gauss(0, runtime_config.get("smooth_noise", 0.2))
-            noise_y = random.gauss(0, runtime_config.get("smooth_noise", 0.2))
-
-            move_mouse(int(step_dx + noise_x), int(step_dy + noise_y))
-
-            time.sleep(runtime_config.get("smooth_delay", 0.01) * random.uniform(0.9, 1.1))
+            # Без шуму — чисто лінійно
+            move_mouse(int(step_dx), int(step_dy))
+            time.sleep(runtime_config.get("smooth_delay", 0.001) * random.uniform(0.9, 1.1))
 
 aim_assist = AimAssist(target_side='ct', target_part='head')
 
@@ -174,13 +163,10 @@ def main_loop():
         try:
             frame = screenshot(window_title)
             results, annotated_frame, inf_ms = detect(model, frame, runtime_config)
-
             ui.update_frame(annotated_frame)
-
             now = time.time()
             fps = 1 / (now - prev_time) if (now - prev_time) > 0 else 0
             prev_time = now
-
             boxes = results[0].boxes
             dets = len(boxes)
             avg_conf = float(boxes.conf.mean()) if dets else 0
@@ -228,6 +214,5 @@ if __name__ == "__main__":
     app = QApplication([])
     ui = MonitorUI(runtime_config)
     ui.show()
-
     threading.Thread(target=main_loop, daemon=True).start()
     app.exec_()

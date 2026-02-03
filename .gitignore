@@ -2,3 +2,15 @@
 dataset/images/
 dataset/labels/
 __pycache__/
+123.__pycache__
+train.cache
+ Val.cache
+ test.cache
+ trainval.cache
+val.cache
+models/
+.cache/
+DatasetBuild.py
+normalize.py
+test.py
+augment.py
